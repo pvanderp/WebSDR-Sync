@@ -20,21 +20,6 @@ host/install-host.ps1     registers the relay     (Windows)
 host/uninstall-host.ps1   removes it again        (Windows)
 ```
 
-## Version
-
-This package is **0.2**. Two digits, and the leading zero means beta: the second digit goes up
-with each iteration (0.2, 0.3, …), the major digit reaches 1 only when the beta is declared over.
-The top bar shows it next to the name.
-
-Chrome's manifest wants at least two dot-separated numbers and most tooling assumes three, so the
-manifest carries the padded form **0.1.0** — the same version with a trailing zero. The console
-strips that zero for display, so what you read on screen is the package version.
-
-Bumping it means editing three things and nothing else: `version` in `manifest.json` (padded),
-`VERSION` in `host/websdrsync_host.py` (unpadded), and the name of the zip. Chrome loads an
-unpacked folder whatever its version, so going from an older, higher number to 0.1 is fine — just
-**Reload** on `chrome://extensions`.
-
 ## Install
 
 **Put this folder somewhere local first** — not OneDrive, iCloud Drive, Dropbox or Google Drive,
@@ -294,21 +279,6 @@ receiver — real native messaging, real TCP:
 * killing rigctld tears down cleanly and re-enables Connect
 * no console errors
 
-Not testable here: your real FTDX10 through real rigctld, and the live Maasbree receiver. If the
-frequency does not appear after Connect, open the **Log** panel — every command and reply is there.
-
-## Renamed
-
-The extension, the relay script and its native-messaging host name all changed, so **re-run
-`host/install-host.sh`** — the relay is registered as `nl.websdrsync.rigctld_bridge` now and the
-script is `host/websdrsync_host.py`. Two things soften it if you forget:
-
-* the console falls back to the old `nl.catsdr.rigctld_bridge` registration once, says so, and
-  tells you to re-run the installer;
-* saved settings migrate from the old `localStorage` key automatically.
-
-The extension ID is unchanged — it is pinned by the manifest `key`, not derived from the name.
-The old `install-host.sh --uninstall` from a pre-rename copy will clear the stale registration.
 
 ## Troubleshooting
 
@@ -370,3 +340,18 @@ Useful on their own:
 python3 host/websdrsync_host.py --selftest   # version, interpreter, log location
 cat host/websdrsync_host.log                 # every launch, and any error
 ```
+
+## Version
+
+This package is **0.2**. Two digits, and the leading zero means beta: the second digit goes up
+with each iteration (0.2, 0.3, …), the major digit reaches 1 only when the beta is declared over.
+The top bar shows it next to the name.
+
+Chrome's manifest wants at least two dot-separated numbers and most tooling assumes three, so the
+manifest carries the padded form **0.1.0** — the same version with a trailing zero. The console
+strips that zero for display, so what you read on screen is the package version.
+
+Bumping it means editing three things and nothing else: `version` in `manifest.json` (padded),
+`VERSION` in `host/websdrsync_host.py` (unpadded), and the name of the zip. Chrome loads an
+unpacked folder whatever its version, so going from an older, higher number to 0.1 is fine — just
+**Reload** on `chrome://extensions`.
