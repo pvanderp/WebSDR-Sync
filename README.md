@@ -2,7 +2,7 @@
 
 ![WebSDR-Sync screenshot](screenshot1.png)
 
-Built with Claude assistence.
+Built with Claude assistance.
 
 Rig control through **Hamlib rigctld over TCP**, a WebSDR filling the rest of the window, the
 receiver following the rig frequency, and the receiver muted while you transmit. Tested on macOS and Windows, should run on the same platforms as Chrome and Hamlib do.
