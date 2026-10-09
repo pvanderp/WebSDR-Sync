@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WebSDR-Sync</title>
+<style>
+  :root {
+    --bg:#212121; --elev:#2c2c2c; --panel:#333; --panel2:#2c2c2c; --border:#444;
+    --text:#c9d1d9; --muted:#8b949e; --accent:#58a6ff; --accent-text:#0d1117;
+    --ok:#2ea043; --warn:#f0a020; --danger:#f85149; --tx:#da3633; --input:#1b1b1b;
+  }
+  * { box-sizing:border-box; }
+  html,body { height:100%; }
+  body {
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  /* ---------- top bar ---------- */
+  .topbar {
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    padding:6px 12px; background:var(--panel); border-bottom:1px solid var(--border);
+  }
+  .brand { font-weight:700; font-size:.78rem; letter-spacing:.04em; color:var(--accent); white-space:nowrap; }
+  .conn { display:inline-flex; align-items:center; gap:6px; font-size:.7rem; color:var(--muted); white-space:nowrap; }
+  .dot { width:9px; height:9px; border-radius:50%; background:var(--muted); flex:0 0 9px; }
+  .dot.on { background:var(--ok); box-shadow:0 0 6px var(--ok); }
+  .dot.err { background:var(--danger); box-shadow:0 0 6px var(--danger); }
+  .freqbox {
+    display:flex; align-items:baseline; gap:8px; margin-left:auto;
+    background:var(--input); border:1px solid var(--border); border-radius:6px; padding:2px 12px;
+  }
+  #freqRead { font-variant-numeric:tabular-nums; font-size:1.45rem; font-weight:700; letter-spacing:.02em; color:var(--accent); }
+  #freqRead.stale { color:var(--muted); }
+  #modeRead { font-size:.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; }
+  .txbadge {
+    font-size:.72rem; font-weight:800; letter-spacing:.08em; padding:4px 12px;
+    border-radius:6px; border:1px solid var(--border); background:var(--panel2); color:var(--muted);
+  }
+  .txbadge.rx { background:#12371c; border-color:var(--ok); color:#7ee292; }
+  .txbadge.tx { background:var(--tx); border-color:var(--tx); color:#fff; animation:pulse .8s ease-in-out infinite alternate; }
+  @keyframes pulse { from{opacity:.65} to{opacity:1} }
+  body.txing { box-shadow: inset 0 0 0 3px var(--tx); }
+
+  /* ---------- panels ---------- */
+  .strip { padding:7px 12px; background:var(--panel2); border-bottom:1px solid var(--border); }
+  .strip.hidden { display:none; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(112px,1fr)); gap:7px 9px; }
+  .fld { min-width:0; }
+  label { display:block; font-size:.58rem; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin-bottom:3px; white-space:nowrap; }
+  input,select,button { font:inherit; border-radius:5px; }
+  input,select {
+    width:100%; padding:4px 6px; font-size:.72rem; background:var(--input);
+    color:var(--text); border:1px solid var(--border);
+  }
+  input[type=checkbox] { width:auto; }
+  button {
+    padding:5px 11px; font-size:.72rem; font-weight:700; cursor:pointer;
+    background:var(--accent); color:var(--accent-text); border:1px solid transparent; white-space:nowrap;
+  }
+  button:hover { filter:brightness(1.08); }
+  button:disabled { background:var(--border); color:var(--muted); cursor:not-allowed; filter:none; }
+  button.ghost { background:var(--panel); color:var(--text); border:1px solid var(--border); }
+  button.ok { background:var(--ok); color:#fff; }
+  button.danger { background:var(--danger); color:#fff; }
+  button.small { padding:3px 8px; font-size:.66rem; }
+  .row { display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap; }
+  .chk { display:inline-flex; align-items:center; gap:5px; font-size:.7rem; color:var(--text); cursor:pointer; white-space:nowrap; }
+  .chk input { margin:0; }
+  .sep { flex:1 1 auto; }
+  .hint { font-size:.62rem; color:var(--muted); }
+  .hint code { background:var(--input); border:1px solid var(--border); border-radius:3px; padding:1px 5px; font-size:.62rem; }
+  #banner {
+    display:none; padding:5px 12px; font-size:.68rem; font-weight:700;
+    background:#4a2f05; color:#ffcf7a; border-bottom:1px solid var(--border);
+  }
+  #banner.show { display:block; }
+
+  /* ---------- log ---------- */
+  #logWrap { background:var(--bg); border-bottom:1px solid var(--border); }
+  #log {
+    height:104px; overflow:auto; padding:5px 12px; font-size:.63rem;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; line-height:1.45;
+  }
+  #log div { word-break:break-word; }
+  #logWrap.hidden { display:none; }
+
+  /* ---------- sdr ---------- */
+  #sdrWrap { flex:1 1 auto; min-height:0; position:relative; background:#000; }
+  #sdrFrame { width:100%; height:100%; border:0; display:block; }
+  #sdrOverlay {
+    position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+    background:rgba(0,0,0,.72); color:#fff; font-size:1.5rem; font-weight:800; letter-spacing:.16em;
+    pointer-events:none;
+  }
+  #sdrOverlay.show { display:flex; }
+  .hdrbtn { background:none; border:1px solid var(--border); color:var(--muted); padding:3px 8px; font-size:.62rem; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <!-- The version is filled in from the manifest at load, so there is exactly
+       one place to bump it. Shows as e.g. "WebSDR-Sync 0.1". -->
+  <span class="brand" id="brand">WebSDR-Sync</span>
+  <span class="conn"><span class="dot" id="statusDot"></span><span id="statusText">Not connected</span></span>
+  <button type="button" id="btnConnect" class="ok">Connect</button>
+  <button type="button" id="btnDisconnect" class="danger" disabled>Disconnect</button>
+  <div class="freqbox">
+    <span id="freqRead">—.———.———</span>
+    <span id="modeRead">—</span>
+  </div>
+  <span class="txbadge" id="txBadge">IDLE</span>
+  <button type="button" class="hdrbtn" id="btnToggleRig">Rig setup</button>
+  <button type="button" class="hdrbtn" id="btnToggleSdr">SDR setup</button>
+  <button type="button" class="hdrbtn" id="btnToggleLog">Log</button>
+</header>
+
+<div id="banner"></div>
+
+<!-- ============ TRANSCEIVER (rigctld) ============ -->
+<section class="strip" id="rigStrip">
+  <div class="grid">
+    <div class="fld" style="grid-column:span 2">
+      <label for="rigHost">rigctld host</label>
+      <input id="rigHost" type="text" value="127.0.0.1" placeholder="127.0.0.1" autocomplete="off" />
+    </div>
+    <div class="fld">
+      <label for="rigPort">Port</label>
+      <input id="rigPort" type="number" min="1" max="65535" value="4532" />
+    </div>
+    <div class="fld">
+      <label for="freqPoll">Freq poll (ms)</label>
+      <input id="freqPoll" type="number" min="200" max="10000" step="100" value="1000" />
+    </div>
+    <div class="fld">
+      <label for="txPoll">PTT poll (ms)</label>
+      <input id="txPoll" type="number" min="100" max="5000" step="50" value="300" />
+    </div>
+    <div class="fld" style="grid-column:span 3; display:flex; align-items:flex-end;">
+      <span class="hint">Start rigctld first, e.g.
+        <code>rigctld -m 1042 -r /dev/cu.usbserial-XXXX -s 38400</code> &nbsp;·&nbsp;
+        it holds the serial port, so WSJT-X and this console can share the radio.</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ WEBSDR CONTROL ============ -->
+<section class="strip" id="sdrStrip">
+  <div class="row">
+    <div class="fld" style="min-width:230px">
+      <label for="sdrSelect">WebSDR receiver</label>
+      <select id="sdrSelect"></select>
+    </div>
+    <div class="fld" style="min-width:126px">
+      <label for="sdrMode">WebSDR mode</label>
+      <select id="sdrMode">
+        <option value="rig">Follow rig mode</option>
+        <option value="band">Auto by band</option>
+        <option value="usb">USB</option>
+        <option value="lsb">LSB</option>
+        <option value="cw">CW</option>
+        <option value="am">AM</option>
+        <option value="fm">FM</option>
+      </select>
+    </div>
+    <div class="fld" style="width:92px">
+      <label for="offsetHz">Offset (Hz)</label>
+      <input id="offsetHz" type="number" step="10" value="0" />
+    </div>
+    <div class="fld" style="width:92px">
+      <label for="tolHz">Tolerance (Hz)</label>
+      <input id="tolHz" type="number" min="1" step="10" value="20" />
+    </div>
+    <label class="chk"><input type="checkbox" id="chkFollow" checked /> Follow rig frequency</label>
+    <label class="chk"><input type="checkbox" id="chkMuteTx" checked /> Mute WebSDR on TX</label>
+    <label class="chk" id="fallbackWrap"><input type="checkbox" id="chkBlankTx" /> URL mode: blank receiver on TX</label>
+    <div class="sep"></div>
+    <button type="button" id="btnRetune" class="ghost small">Retune now</button>
+    <button type="button" id="btnReload" class="ghost small">Reload SDR</button>
+    <button type="button" id="btnOpenTab" class="ghost small">Open in tab ↗</button>
+  </div>
+</section>
+
+<div id="logWrap"><div id="log"></div></div>
+
+<div id="sdrWrap">
+  <!-- The sandbox list deliberately omits allow-top-navigation. Several WebSDRs
+       (Twente among them) run  if (top != self) top.location.replace(...)  which
+       would otherwise replace this whole page with the receiver and take the rig
+       panel with it. Everything else the receiver needs is granted. -->
+  <iframe id="sdrFrame" title="WebSDR" allow="autoplay"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups
+                   allow-popups-to-escape-sandbox allow-modals allow-downloads"></iframe>
+  <div id="sdrOverlay">TRANSMITTING — RX MUTED</div>
+</div>
+
+<script src="console.js"></script>
+</body>
+</html>

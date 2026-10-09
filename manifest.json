@@ -1,0 +1,64 @@
+{
+  "manifest_version": 3,
+  "name": "WebSDR-Sync",
+  "version": "0.2.0",
+  "description": "Keeps a WebSDR tuned to your transceiver over Hamlib rigctld, and mutes it while you transmit.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAp+765MswenzHOxH0M6WR1uo6BgNWxZxQj1HTX7LOY4zh0RVAJyiJB2hetXkLDyQimahKKQJwmpBfwtooYe8EpNqGGCN57rai+sGzNXSTSZOosLySXUQe8PRhmo0p9WJENJydXMyE0K3wGvMkQd7IN8I08IehmRd2ahw2tvhDTFsvwT9F+42chp4M7RbZT0MMZgbCXvUrEBXLpeBczHim9J8PbpFFxKqQ3B0gdohHCwf2fPQiei9lEiGzM1AsUDHRSGxicWmHyJSHLVKo/oqH+oJy3eUXBwNeiulpo2Qk9FzxrLqaay43o/YGlgejDp3DJhK4hOnmrmIPaE6WNRygVQIDAQAB",
+  "permissions": [
+    "nativeMessaging"
+  ],
+  "background": {
+    "service_worker": "sw.js"
+  },
+  "action": {
+    "default_title": "Open WebSDR-Sync"
+  },
+  "//": [
+    "VERSIONING",
+    "  The package version is two digits -- 0.1 -- and the leading 0 says it is",
+    "  still beta. Chrome requires at least two dot-separated numbers here and",
+    "  the tooling elsewhere assumes three, so the manifest carries the padded",
+    "  form 0.1.0: same version, trailing zero added. Bump the SECOND digit for",
+    "  each iteration (0.2 -> 0.2.0, 0.3 -> 0.3.0). The major digit goes to 1",
+    "  only when Peter says the beta is over.",
+    "  Three places to change, and nowhere else: this field, VERSION in",
+    "  host/websdrsync_host.py, and the zip file name. The top bar reads the",
+    "  version from this manifest at load and drops the trailing .0.",
+    "",
+    "ADDING A RECEIVER",
+    "  1. add its origin to host_permissions and to content_scripts[0].matches below",
+    "  2. add it to the SDRS array at the top of console.js, with coverage in kHz",
+    "  3. reload the extension on chrome://extensions",
+    "",
+    "PORTS ARE NOT PART OF A MATCH PATTERN. Chrome match patterns cannot contain a",
+    "port and match every port on the host, so one entry per HOST covers all of a",
+    "site's receivers -- sdr.websdrmaasbree.nl:8901 (low) and :8902 (high) are both",
+    "covered by the single sdr.websdrmaasbree.nl entry. The port still has to be",
+    "right in the SDRS url in console.js, which is where it actually connects.",
+    "",
+    "bridge.js only answers messages from this extension's own console page, so it",
+    "does nothing at all on a receiver you open normally."
+  ],
+  "host_permissions": [
+    "http://sdr.websdrmaasbree.nl/*",
+    "http://websdr.ewi.utwente.nl/*",
+    "http://hackgreensdr.org/*",
+    "http://ham.websdrbordeaux.fr/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "http://sdr.websdrmaasbree.nl/*",
+        "http://websdr.ewi.utwente.nl/*",
+        "http://hackgreensdr.org/*",
+        "http://ham.websdrbordeaux.fr/*"
+      ],
+      "js": [
+        "bridge.js"
+      ],
+      "world": "MAIN",
+      "all_frames": true,
+      "run_at": "document_idle"
+    }
+  ]
+}
