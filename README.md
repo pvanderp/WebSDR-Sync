@@ -20,6 +20,10 @@ host/install-host.ps1     registers the relay     (Windows)
 host/uninstall-host.ps1   removes it again        (Windows)
 ```
 
+## Download
+
+Use the green **Code** button to download a ZIP file with the files. There is no installer. Follow the instructions below.
+
 ## Install
 
 **Put this folder somewhere local first** — not OneDrive, iCloud Drive, Dropbox or Google Drive,
