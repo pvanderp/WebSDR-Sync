@@ -1,5 +1,7 @@
 # WebSDR-Sync — Control web SDR with a transceiver
 
+![WebSDR-Sync screenshot](screenshot1.png)
+
 Built with Claude assistence.
 
 Rig control through **Hamlib rigctld over TCP**, a WebSDR filling the rest of the window, the
